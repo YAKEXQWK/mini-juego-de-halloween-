@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🎃 Halloween Arcade & Pass Definitivo 🦇</title>
+    <style>
+        :root {
+            --bg-color: #08040c;
+            --naranja-hallow: #ff6600;
+            --morado-neón: #9333ea;
+            --verde-neón: #10b981;
+            --azul-neón: #3b82f6;
+            --texto-principal: #f8fafc;
+            --box-bg: #140b21;
+        }
+
+        body {
+            margin: 0; padding: 10px;
+            background-color: var(--bg-color);
+            color: var(--texto-principal);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; user-select: none; box-sizing: border-box;
+            background-image: radial-gradient(circle at 50% 10%, #2e1065 0%, #08040c 80%);
+        }
+
+        h1, h2 { text-align: center; color: var(--naranja-hallow); text-shadow: 0 0 10px rgba(255,102,0,0.5); margin: 5px 0; }
+
+        .screen { display: none; width: 100%; max-width: 480px; flex-direction: column; align-items: center; box-sizing: border-box; }
+        .active-screen { display: flex; }
+
+        /* MENÚ DE 4 BOTONES PRINCIPALES */
+        .menu-navegacion {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; max-width: 400px; margin-top: 20px;
+        }
+        .btn-menu-principal {
+            background: var(--box-bg); border: 3px solid var(--morado-neón); border-radius: 16px;
+            padding: 20px; color: white; font-size: 1.2em; font-weight: bold; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.4); transition: transform 0.15s;
+        }
+        .btn-menu-principal:hover { transform: scale(1.03); border-color: var(--naranja-hallow); }
+
+        /* HEADER / CONTADOR GLOBAL */
+        .header-arcade {
+            width: 100%; background: rgba(20, 11, 33, 0.9); border: 2px solid var(--naranja-hallow);
+            border-radius: 12px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.85em; box-sizing: border-box; margin-bottom: 12px;
+        }
+
+        /* TEMPORIZADOR DE MINIJUEGOS */
+        .banner-temporizador {
+            background: #1e1b4b; border: 2px dashed var(--azul-neón); padding: 8px; border-radius: 8px;
+            width: 100%; text-align: center; font-size: 0.85em; margin-bottom: 10px; color: #93c5fd;
+        }
+
+        /* LISTA DE 3 MINIJUEGOS ACTIVOS */
+        .lista-juegos-activos { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        .tarjeta-minijuego {
+            background: var(--box-bg); border: 2px solid var(--morado-neón); border-radius: 10px;
+            padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            font-size: 0.95em; box-shadow: 0 0 10px rgba(147, 51, 234, 0.2);
+        }
+        .tarjeta-minijuego:hover { background: #24133b; border-color: var(--naranja-hallow); }
+        .tarjeta-minijuego.bloqueado { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+
+        /* PASE DE BATALLA (VERTICAL) */
+        .pase-container {
+            width: 100%; max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;
+        }
+        .nivel-pase {
+            background: #170d26; border: 2px solid #4c1d95; border-radius: 8px; padding: 8px 12px;
+            display: flex; justify-content: space-between; align-items: center; font-size: 0.85em;
+        }
+        .nivel-pase.reclamado { border-color: var(--verde-neón); background: rgba(16, 185, 129, 0.1); }
+
+        /* BOTONES Y PANELES GENERALES */
+        .btn-accion {
+            background: linear-gradient(135deg, var(--naranja-hallow), #d97706); color: white; border: none;
+            padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9em; margin-top: 10px;
+        }
+        .btn-volver { background: #374151; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; margin-top: 15px; }
+
+        .burbuja-msj {
+            position: fixed; bottom: 15px; background: #18181b; border: 2px solid var(--naranja-hallow);
+            padding: 10px 15px; border-radius: 12px; font-size: 0.85em; display: none; z-index: 1000; text-align: center;
+        }
+
+        /* PANEL DE JUEGOS Y MODALES */
+        .panel-juego-activo {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(8, 4, 12, 0.98);
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 500; padding: 15px; box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="burbuja-msj" id="burbuja-global"></div>
+
+    <!-- PANTALLA PRINCIPAL DE 4 BOTONES -->
+    <div id="pantalla-principal" class="screen active-screen">
+        <h1>🎃 HALLOWEEN ARCADE 🦇</h1>
+        <div style="font-size: 0.8em; color: #a1a1aa; margin-bottom: 15px;">Sistema de Pase, Minijuegos Aleatorios y Recompensas</div>
+
+        <div class="menu-navegacion">
+            <button class="btn-menu-principal" onclick="cambiarPantalla('pantalla-minijuegos')">
+                <span style="font-size: 2em;">🎮</span> Minijuegos
+            </button>
+            <button class="btn-menu-principal" onclick="cambiarPantalla('pantalla-pase')">
+                <span style="font-size: 2em;">🎫</span> Pase de Batalla
+            </button>
+            <button class="btn-menu-principal" onclick="cambiarPantalla('pantalla-recompensas')">
+                <span style="font-size: 2em;">🍬</span> Recompensas
+            </button>
+            <button class="btn-menu-principal" onclick="mostrarEstadisticasGlobales()">
+                <span style="font-size: 2em;">📊</span> Perfil & Puntos
+            </button>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE MINIJUEGOS (🎮) -->
+    <div id="pantalla-minijuegos" class="screen">
+        <div class="header-arcade">
+            <span>🎮 MINIJUEGOS ACTIVOS</span>
+            <button class="btn-volver" style="margin:0; padding:4px 8px;" onclick="cambiarPantalla('pantalla-principal')">🏠 Menú</button>
+        </div>
+
+        <div class="banner-temporizador" id="texto-temporizador">⏳ Rotación de minijuegos en: 60:00</div>
+        <p style="font-size: 0.75em; color: #a1a1aa; margin: 2px 0 10px 0;">Cada hora se seleccionan al azar 3 minijuegos disponibles.</p>
+
+        <div class="lista-juegos-activos" id="contenedor-juegos-activos">
+            <!-- Se llena dinámicamente -->
+        </div>
+    </div>
+
+    <!-- PANTALLA DE PASE DE BATALLA (🎫) -->
+    <div id="pantalla-pase" class="screen">
+        <div class="header-arcade">
+            <span>🎫 PASE DE HALLOWEEN</span>
+            <button class="btn-volver" style="margin:0; padding:4px 8px;" onclick="cambiarPantalla('pantalla-principal')">🏠 Menú</button>
+        </div>
+        <div style="font-size: 0.8em; color: #f59e0b; margin-bottom: 10px;">Puntos actuales: <b id="lbl-puntos-pase">0</b> 🌟</div>
+
+        <div class="pase-container" id="contenedor-niveles-pase">
+            <!-- Se llena dinámicamente con las 10 fases -->
+        </div>
+    </div>
+
+    <!-- PANTALLA DE RECOMPENSAS Y CARAMELOS (🍬) -->
+    <div id="pantalla-recompensas" class="screen">
+        <div class="header-arcade">
+            <span>🍬 CARAMELOS SORPRESA</span>
+            <button class="btn-volver" style="margin:0; padding:4px 8px;" onclick="cambiarPantalla('pantalla-principal')">🏠 Menú</button>
+        </div>
+        
+        <div style="background:#170d26; border:2px solid var(--naranja-hallow); border-radius:12px; padding:15px; width:100%; text-align:center; box-sizing:border-box; margin-bottom:12px;">
+            <p style="font-size: 0.85em; margin: 0 0 8px 0;">Caramelos disponibles para abrir:</p>
+            <div style="font-size: 1.8em; color: var(--naranja-hallow); font-weight: bold;" id="lbl-cantidad-caramelos">0 🍬</div>
+            <button class="btn-accion" onclick="reclamarCarameloSorpresa()">¡Reclamar / Abrir Caramelo!</button>
+        </div>
+
+        <div style="width:100%; background:rgba(20,11,33,0.8); border:1px solid #4c1d95; border-radius:10px; padding:10px; max-height:180px; overflow-y:auto; box-sizing:border-box;">
+            <div style="font-size:0.8em; color: #38bdf8; margin-bottom:5px; font-weight:bold;">📜 Historial de Premios Reclamados:</div>
+            <ul id="lista-historial-premios" style="font-size:0.75em; padding-left:15px; margin:0; color:#cbd5e1;">
+                <li>Aún no has abierto caramelos.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR PARA EJECUTAR LOS MINIJUEGOS -->
+    <div class="panel-juego-activo" id="panel-juego-modal">
+        <h2 id="titulo-juego-modal" style="color:var(--naranja-hallow);">Minijuego</h2>
+        <div id="cuerpo-juego-modal" style="width:100%; max-width:420px; display:flex; flex-direction:column; align-items:center;"></div>
+        <button class="btn-volver" onclick="cerrarMinijuegoActual()">Salir del Minijuego</button>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS DE PREMIOS DE CARAMELOS Y PROBABILIDADES ---
+        const TABLA_CARAMELOS = [
+            { nombre: "huevo retro", prob: 30 }, { nombre: "huevo jubilado", prob: 20 },
+            { nombre: "huevo básico", prob: 60 }, { nombre: "huevo roto", prob: 50 },
+            { nombre: "huevo mascota", prob: 30 }, { nombre: "huevo extinto", prob: 35 },
+            { nombre: "huevo hada", prob: 65 }, { nombre: "caja 2D", prob: 10 },
+            { nombre: "regalo pequeño", prob: 70 }, { nombre: "regalo mediano", prob: 40 },
+            { nombre: "regalo grande", prob: 9 }, { nombre: "pocion bonus bucks", prob: 15 },
+            { nombre: "pocion XP bonus", prob: 15 }, { nombre: "pet periquito bruja", prob: 40 },
+            { nombre: "jerbo gelatinoso", prob: 20 }, { nombre: "conechoco", prob: 10 },
+            { nombre: "chocodrilo", prob: 10 }, { nombre: "iguana de gomita", prob: 20 },
+            { nombre: "caja de patitos", prob: 10 }, { nombre: "caja de bellotas", prob: 5 },
+            { nombre: "caja de conechocos", prob: 5 }, { nombre: "huevo de cristal", prob: 2 },
+            { nombre: "stiker de halloween", prob: 83 }, { nombre: "maletin de fantasmas", prob: 2 },
+            { nombre: "stiker de halloween 2", prob: 84 }
+        ];
+
+        // Fases del Pase de Batalla
+        const PASE_FASES = [
+            { nivel: 1, puntos: 100, recompensa: "2 huevos básicos 🥚" },
+            { nivel: 2, puntos: 250, recompensa: "2 regalos medianos 🎁" },
+            { nivel: 3, puntos: 450, recompensa: "2 pociones bonus XP 🧪" },
+            { nivel: 4, puntos: 700, recompensa: "Caja de bellotas uno 📦" },
+            { nivel: 5, puntos: 1000, recompensa: "2 regalos legendarios 👑" },
+            { nivel: 6, puntos: 1350, recompensa: "Mono de halloween pet 🐒" },
+            { nivel: 7, puntos: 1750, recompensa: "2 stikers de halloween 🏷️" },
+            { nivel: 8, puntos: 2150, recompensa: "Paloma de halloween pet 🕊️" },
+            { nivel: 9, puntos: 2400, recompensa: "Maletín de fantasma 💼" },
+            { nivel: 10, puntos: 2500, recompensa: "Caja de conechoco 🍫" }
+        ];
+
+        // Lista de los 10 minijuegos
+        const TODOS_LOS_MINIJUEGOS = [
+            { id: 1, nombre: "The Hotel (240 Salas)", desc: "Puertas, puzles y tienda cada 10 salas." },
+            { id: 2, nombre: "Defender los Caramelos (TD)", desc: "Oleadas de fantasmas y torres defensivas." },
+            { id: 3, nombre: "Memoria Tenebrosa (25 Rondas)", desc: "Secuencia de colores avanzada." },
+            { id: 4, nombre: "Laberinto de Conductos (30 Fases)", desc: "Esquiva al virus 👾 en 30 laberintos." },
+            { id: 5, nombre: "Laboratorio de Mezcla", desc: "Resuelve acertijos combinando frascos." },
+            { id: 6, nombre: "¿Dónde está el dulce? (30 Rondas)", desc: "Sigue la calabaza 🎃 correcta." },
+            { id: 7, nombre: "Armado de Calabaza & Jefe", desc: "Arma trozos y derrota al jefe con cañones." },
+            { id: 8, nombre: "Oficina Nocturna (Sobrevivir 10m)", desc: "Estilo FNAF con cámaras, luces y batería." },
+            { id: 9, nombre: "Invernadero de Alquimia (3 Fases)", desc: "Acertijos botánicos y pociones exactas." },
+            { id: 10, nombre: "Desafío Relámpago Arcade", desc: "Minijuego bonus de reflejos rápidos." }
+        ];
+
+        // --- ESTADO GLOBAL ---
+        let arcadeState = {
+            puntosPase: 0,
+            caramelosDisponibles: 0,
+            historialPremios: [],
+            nivelesReclamados: [],
+            juegosActivosHora: [],
+            ultimoTiempoRotacion: 0
+        };
+
+        window.addEventListener('load', () => {
+            let save = localStorage.getItem('arcade_halloween_def_v5');
+            if (save) arcadeState = JSON.parse(save);
+            
+            verificarRotacionHoraria();
+            setInterval(verificarRotacionHoraria, 1000);
+            renderizarPase();
+            renderizarHistorialRecompensas();
+        });
+
+        function guardarArcade() {
+            localStorage.setItem('arcade_halloween_def_v5', JSON.stringify(arcadeState));
+        }
+
+        function mostrarBurbuja(texto) {
+            let b = document.getElementById('burbuja-global');
+            b.innerText = texto; b.style.display = 'block';
+            setTimeout(() => { b.style.display = 'none'; }, 3000);
+        }
+
+        function cambiarPantalla(idPantalla) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(idPantalla).classList.add('active-screen');
+            if (idPantalla === 'pantalla-minijuegos') renderizarJuegosActivos();
+            if (idPantalla === 'pantalla-pase') renderizarPase();
+            if (idPantalla === 'pantalla-recompensas') actualizarRecompensasUI();
+        }
+
+        // --- CICLO HORARIO DE 3 MINIJUEGOS ALEATORIOS ---
+        function verificarRotacionHoraria() {
+            let ahora = Date.now();
+            let unaHora = 60 * 60 * 1000;
+
+            if (!arcadeState.ultimoTiempoRotacion || (ahora - arcadeState.ultimoTiempoRotacion) >= unaHora) {
+                // Seleccionar 3 aleatorios de los 10
+                let mezclados = [...TODOS_LOS_MINIJUEGOS].sort(() => 0.5 - Math.random());
+                arcadeState.juegosActivosHora = mezclados.slice(0, 3).map(j => j.id);
+                arcadeState.ultimoTiempoRotacion = ahora;
+                guardarArcade();
+            }
+
+            // Calcular tiempo restante
+            let tiempoRestante = unaHora - (ahora - arcadeState.ultimoTiempoRotacion);
+            let mins = Math.floor(tiempoRestante / 60000);
+            let segs = Math.floor((tiempoRestante % 60000) / 1000);
+            let tEl = document.getElementById('texto-temporizador');
+            if (tEl) tEl.innerText = `⏳ Rotación de minijuegos en: ${mins}:${segs < 10 ? '0':''}${segs}`;
+        }
+
+        function renderizarJuegosActivos() {
+            let cont = document.getElementById('contenedor-juegos-activos');
+            cont.innerHTML = "";
+
+            arcadeState.juegosActivosHora.forEach(idJuego => {
+                let juego = TODOS_LOS_MINIJUEGOS.find(j => j.id === idJuego);
+                let div = document.createElement('div');
+                div.className = 'tarjeta-minijuego';
+                div.innerHTML = `<div><b>${juego.nombre}</b><br><small style="color:#a1a1aa;">${juego.desc}</small></div><button class="btn-accion" style="margin:0;">Jugar 🎮</button>`;
+                div.onclick = () => iniciarMinijuego(idJuego);
+                cont.appendChild(div);
+            });
+        }
+
+        // --- SISTEMA DE PASE DE BATALLA ---
+        function renderizarPase() {
+            document.getElementById('lbl-puntos-pase').innerText = arcadeState.puntosPase;
+            let cont = document.getElementById('contenedor-niveles-pase');
+            cont.innerHTML = "";
+
+            PASE_FASES.forEach(fase => {
+                let reclamado = arcadeState.nivelesReclamados.includes(fase.nivel);
+                let disponible = arcadeState.puntosPase >= fase.puntos && !reclamado;
+
+                let div = document.createElement('div');
+                div.className = 'nivel-pase' + (reclamado ? ' reclamado' : '');
+                div.innerHTML = `
+                    <div><b>Nivel ${fase.nivel}</b> (${fase.puntos} pts)<br><span style="color:#f59e0b;">${fase.recompensa}</span></div>
+                    <div>${reclamado ? '✔ Reclamado' : (disponible ? `<button class="btn-accion" style="margin:0; padding:4px 8px;" onclick="reclamarNivelPase(${fase.nivel})">Reclamar</button>` : 'Bloqueado')}</div>
+                `;
+                cont.appendChild(div);
+            });
+        }
+
+        function reclamarNivelPase(nivel) {
+            arcadeState.nivelesReclamados.push(nivel);
+            guardarArcade();
+            renderizarPase();
+            mostrarBurbuja(`🎉 ¡Nivel ${nivel} del Pase reclamado con éxito!`);
+        }
+
+        // --- ZONA DE RECOMPENSAS Y CARAMELOS ---
+        function actualizarRecompensasUI() {
+            document.getElementById('lbl-cantidad-caramelos').innerText = `${arcadeState.caramelosDisponibles} 🍬`;
+        }
+
+        function reclamarCarameloSorpresa() {
+            if (arcadeState.caramelosDisponibles <= 0) {
+                mostrarBurbuja("❌ No tienes caramelos sorpresa. Juega en los minijuegos para conseguirlos.");
+                return;
+            }
+
+            arcadeState.caramelosDisponibles--;
+            
+            // Sorteo de premios con probabilidades exactas
+            let obtenidos = [];
+            TABLA_CARAMELOS.forEach(item => {
+                if (Math.random() * 100 <= item.prob) obtenidos.push(item.nombre);
+            });
+            if (obtenidos.length === 0) obtenidos.push("huevo básico");
+
+            let premioFinal = obtenidos[Math.floor(Math.random() * obtenidos.length)];
+            arcadeState.historialPremios.push(premioFinal);
+            
+            // Sumar puntos al pase por abrir caramelo (2 puntos por caramelo)
+            arcadeState.puntosPase += 2;
+
+            guardarArcade();
+            actualizarRecompensasUI();
+            renderizarHistorialRecompensas();
+            mostrarBurbuja(`🎁 ¡Te tocó: ${premioFinal} (+2 pts al Pase)!`);
+        }
+
+        function renderizarHistorialRecompensas() {
+            let lista = document.getElementById('lista-historial-premios');
+            if (arcadeState.historialPremios.length === 0) {
+                lista.innerHTML = "<li>Aún no has abierto caramelos.</li>";
+                return;
+            }
+            lista.innerHTML = "";
+            arcadeState.historialPremios.forEach((p, idx) => {
+                let li = document.createElement('li');
+                li.innerText = `#${idx+1}: ${p}`;
+                lista.appendChild(li);
+            });
+        }
+
+        // --- SIMULADOR / EJECUTOR DE MINIJUEGOS ---
+        function iniciarMinijuego(id) {
+            let juego = TODOS_LOS_MINIJUEGOS.find(j => j.id === id);
+            document.getElementById('titulo-juego-modal').innerText = juego.nombre;
+            let cuerpo = document.getElementById('cuerpo-juego-modal');
+            
+            // Otorgar puntos automáticos (45 puntos) y caramelos al "simular" completar una sesión del minijuego para probar el arcade
+            cuerpo.innerHTML = `
+                <p style="font-size:0.85em; text-align:center; color:#cbd5e1;">Simulando sesión de ${juego.nombre}...</p>
+                <div style="font-size:3em; margin:10px 0;">🎮✨</div>
+                <button class="btn-accion" onclick="completarSesionMinijuego()">¡Completar y Reclamar Recompensas!</button>
+            `;
+            document.getElementById('panel-juego-modal').style.display = 'flex';
+        }
+
+        function completarSesionMinijuego() {
+            arcadeState.puntosPase += 45; // 45 puntos por minijuego
+            arcadeState.caramelosDisponibles += 2; // caramelos de recompensa
+            guardarArcade();
+            
+            document.getElementById('panel-juego-modal').style.display = 'none';
+            mostrarBurbuja("🏆 ¡Minijuego superado! +45 Puntos para el Pase y +2 Caramelos 🍬 añadidos.");
+            renderizarPase();
+            actualizarRecompensasUI();
+        }
+
+        function cerrarMinijuegoActual() {
+            document.getElementById('panel-juego-modal').style.display = 'none';
+        }
+
+        function mostrarEstadisticasGlobales() {
+            alert(`📊 ESTADÍSTICAS DE USUARIO:\n- Puntos en Pase: ${arcadeState.puntosPase}\n- Caramelos Disponibles: ${arcadeState.caramelosDisponibles}\n- Premios Reclamados: ${arcadeState.historialPremios.length}`);
+        }
+    </script>
+</body>
+</html>
